@@ -21,35 +21,54 @@
     <button onclick="login()">تسجيل الدخول عبر Pi</button>
 
     <script>
-        // التأكد من عمل المكتبة
-        window.onload = function() {
-            const statusBox = document.getElementById('status-box');
-            if (window.Pi) {
-                statusBox.innerText = "✅ مكتبة Pi جاهزة للعمل";
-                statusBox.className = "status success";
-                try {
-                    window.Pi.init({ version: "2.0", sandbox: true });
-                } catch(e) {
-                    statusBox.innerText = "❌ خطأ في تهيئة Pi: " + e.message;
-                }
-            } else {
-                statusBox.innerText = "❌ فشل تحميل مكتبة Pi. تأكد من فتح الرابط داخل Pi Browser وليس Chrome.";
-                statusBox.className = "status error";
-            }
-        };
-
-        async function login() {
-            if (!window.Pi) {
-                alert("يرجى فتح التطبيق من متصفح Pi");
-                return;
-            }
+        <script>
+    // 1. تهيئة مكتبة Pi فور تحميل الصفحة
+    const Pi = window.Pi;
+    
+    window.onload = function() {
+        if (window.Pi) {
             try {
-                const auth = await window.Pi.authenticate(['username'], (payment) => {});
-                alert("أهلاً بك: " + auth.user.username);
-            } catch (err) {
-                alert("حدث خطأ: " + err.message);
+                Pi.init({ version: "2.0", sandbox: true });
+                document.getElementById('status-box').innerText = "✅ مكتبة Pi جاهزة للعمل";
+                document.getElementById('status-box').className = "status success";
+            } catch (e) {
+                console.error("Initialization error:", e);
             }
         }
-    </script>
+    };
+
+    // 2. دالة تسجيل الدخول المحسنة
+    async function login() {
+        console.log("محاولة تسجيل الدخول...");
+        
+        if (!window.Pi) {
+            alert("خطأ: لم يتم العثور على مكتبة Pi. افتح الرابط من متصفح Pi.");
+            return;
+        }
+
+        try {
+            // إضافة سطر لإظهار أن الزر استجاب للضغط
+            document.querySelector('button').innerText = "جاري الاتصال...";
+
+            const scopes = ['username', 'payments'];
+            
+            // هذه هي الوظيفة التي تفتح النافذة المنبثقة
+            const auth = await Pi.authenticate(scopes, (payment) => {
+                console.log("Incomplete payment:", payment);
+            });
+
+            // إذا نجح الاتصال
+            document.getElementById('status-box').innerHTML = "✅ مرحباً، " + auth.user.username;
+            alert("تم تسجيل الدخول بنجاح! أهلاً بك " + auth.user.username);
+            document.querySelector('button').innerText = "تم تسجيل الدخول";
+
+        } catch (err) {
+            console.error("Auth error:", err);
+            alert("تنبيه: " + err.message);
+            document.querySelector('button').innerText = "تسجيل الدخول عبر Pi";
+        }
+    }
+</script>
+
 </body>
 </html>
