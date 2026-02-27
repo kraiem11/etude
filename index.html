@@ -3,48 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Étude App</title>
+    <title>Étude - Payments</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
-        body { font-family: sans-serif; background: #673ab7; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; }
-        .box { background: white; color: #333; padding: 30px; border-radius: 20px; text-align: center; width: 85%; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        .btn { background: #ffa000; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        body { font-family: sans-serif; background: #673ab7; display: flex; flex-direction: column; align-items: center; padding-top: 50px; margin: 0; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 20px; }
+        h1 { color: white; margin-bottom: 20px; }
+        .btn { background: #ffa000; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-pay { background: #4caf50; }
+        #status { color: #666; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>Étude 📚</h1>
-        <p id="msg">مرحباً بك في منصة التعلم</p>
+
+    <h1>تطبيق Étude 📚</h1>
+
+    <div class="card">
+        <p id="user-msg">مرحباً بك! يرجى تسجيل الدخول أولاً</p>
         <button class="btn" id="loginBtn">دخول عبر Pi</button>
     </div>
 
-    <script>
-        // دالة التأكد من جاهزية المكتبة
-        const loginBtn = document.getElementById('loginBtn');
-        
-        // ربط الزر يدوياً لضمان الاستجابة
-        loginBtn.addEventListener('click', async () => {
-            if (!window.Pi) {
-                alert("يرجى فتح التطبيق من متصفح Pi الرسمي");
-                return;
-            }
+    <div class="card" id="lesson-card" style="display:none;">
+        <h3>🎓 درس: أساسيات عملات Pi</h3>
+        <p>السعر: 0.1 π</p>
+        <button class="btn btn-pay" onclick="transferPi()">شراء الدرس الآن</button>
+        <div id="status"></div>
+    </div>
 
+    <script>
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: true });
+
+        // دالة تسجيل الدخول
+        document.getElementById('loginBtn').addEventListener('click', async () => {
             try {
-                loginBtn.innerText = "جاري الاتصال...";
-                // تهيئة المكتبة
-                window.Pi.init({ version: "2.0", sandbox: true });
-                
-                // طلب المصادقة
-                const auth = await window.Pi.authenticate(['username'], (p) => {});
-                
-                document.getElementById('msg').innerText = "أهلاً بك يا " + auth.user.username;
-                loginBtn.innerText = "تم الدخول بنجاح";
-                loginBtn.style.background = "#4caf50";
+                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+                document.getElementById('user-msg').innerText = "أهلاً بك يا " + auth.user.username;
+                document.getElementById('loginBtn').style.display = "none";
+                document.getElementById('lesson-card').style.display = "block";
             } catch (e) {
-                alert("حدث خطأ: " + e.message);
-                loginBtn.innerText = "دخول عبر Pi";
+                alert("خطأ في الدخول: " + e.message);
             }
         });
+
+        // دالة الدفع (إرسال عملة Pi)
+        async function transferPi() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = "جاري تحضير المحفظة...";
+            
+            try {
+                const payment = await Pi.createPayment({
+                    amount: 0.1,
+                    memo: "شراء درس تعليمي من Étude",
+                    metadata: { lessonId: "pi_101" },
+                }, {
+                    onReadyForServerApproval: (paymentId) => {
+                        statusDiv.innerText = "ينتظر موافقة الشبكة (ID: " + paymentId + ")";
+                        // ملاحظة للمطور: هنا يتم إرسال المعرف لخادمك لاحقاً
+                    },
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        statusDiv.innerText = "✅ اكتمل الدفع! رقم العملية: " + txid;
+                        alert("مبروك! تم فتح الدرس.");
+                    },
+                    onCancel: (paymentId) => { statusDiv.innerText = "❌ تم إلغاء العملية"; },
+                    onError: (error, payment) => { statusDiv.innerText = "⚠️ خطأ: " + error.message; },
+                });
+            } catch (e) {
+                alert("فشل العملية: " + e.message);
+            }
+        }
     </script>
 </body>
 </html>
