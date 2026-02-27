@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Étude</title>
+    <title>Étude App</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         body { font-family: sans-serif; background: #673ab7; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; }
@@ -13,24 +13,38 @@
 </head>
 <body>
     <div class="box">
-        <h1>📚 Étude</h1>
-        <p id="message">مرحباً بك في منصة التعلم</p>
-        <button class="btn" onclick="login()">دخول عبر Pi</button>
+        <h1>Étude 📚</h1>
+        <p id="msg">مرحباً بك في منصة التعلم</p>
+        <button class="btn" id="loginBtn">دخول عبر Pi</button>
     </div>
 
     <script>
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: true });
-
-        async function login() {
-            try {
-                const auth = await Pi.authenticate(['username'], (p) => {});
-                document.getElementById('message').innerText = "أهلاً بك يا " + auth.user.username;
-                alert("تم تسجيل الدخول بنجاح!");
-            } catch (e) {
-                alert("تنبيه: " + e.message);
+        // دالة التأكد من جاهزية المكتبة
+        const loginBtn = document.getElementById('loginBtn');
+        
+        // ربط الزر يدوياً لضمان الاستجابة
+        loginBtn.addEventListener('click', async () => {
+            if (!window.Pi) {
+                alert("يرجى فتح التطبيق من متصفح Pi الرسمي");
+                return;
             }
-        }
+
+            try {
+                loginBtn.innerText = "جاري الاتصال...";
+                // تهيئة المكتبة
+                window.Pi.init({ version: "2.0", sandbox: true });
+                
+                // طلب المصادقة
+                const auth = await window.Pi.authenticate(['username'], (p) => {});
+                
+                document.getElementById('msg').innerText = "أهلاً بك يا " + auth.user.username;
+                loginBtn.innerText = "تم الدخول بنجاح";
+                loginBtn.style.background = "#4caf50";
+            } catch (e) {
+                alert("حدث خطأ: " + e.message);
+                loginBtn.innerText = "دخول عبر Pi";
+            }
+        });
     </script>
 </body>
 </html>
