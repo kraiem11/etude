@@ -1,17 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étude - Test</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js" defer></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f4; }
+        .status { padding: 10px; margin: 20px; border-radius: 8px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #673ab7; color: white; border: none; border-radius: 25px; }
+    </style>
 </head>
-
 <body>
-    ...
+
+    <h1>تطبيق Étude 📚</h1>
+    <div id="status-box" class="status">جاري فحص الاتصال بـ Pi Network...</div>
     
+    <button onclick="login()">تسجيل الدخول عبر Pi</button>
+
     <script>
+        // التأكد من عمل المكتبة
         window.onload = function() {
+            const statusBox = document.getElementById('status-box');
             if (window.Pi) {
-                window.Pi.init({ version: "2.0", sandbox: true });
+                statusBox.innerText = "✅ مكتبة Pi جاهزة للعمل";
+                statusBox.className = "status success";
+                try {
+                    window.Pi.init({ version: "2.0", sandbox: true });
+                } catch(e) {
+                    statusBox.innerText = "❌ خطأ في تهيئة Pi: " + e.message;
+                }
             } else {
-                console.error("مكتبة Pi لم تُحمل بعد");
+                statusBox.innerText = "❌ فشل تحميل مكتبة Pi. تأكد من فتح الرابط داخل Pi Browser وليس Chrome.";
+                statusBox.className = "status error";
+            }
+        };
+
+        async function login() {
+            if (!window.Pi) {
+                alert("يرجى فتح التطبيق من متصفح Pi");
+                return;
+            }
+            try {
+                const auth = await window.Pi.authenticate(['username'], (payment) => {});
+                alert("أهلاً بك: " + auth.user.username);
+            } catch (err) {
+                alert("حدث خطأ: " + err.message);
             }
         }
     </script>
 </body>
+</html>
