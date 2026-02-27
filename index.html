@@ -3,75 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Étude - Payments</title>
+    <title>Étude - منصة التعلم</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
-        body { font-family: sans-serif; background: #673ab7; display: flex; flex-direction: column; align-items: center; padding-top: 50px; margin: 0; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 20px; }
-        h1 { color: white; margin-bottom: 20px; }
-        .btn { background: #ffa000; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-pay { background: #4caf50; }
-        #status { color: #666; font-size: 14px; margin-top: 10px; }
+        :root { --main-purple: #673ab7; --accent-orange: #ffa000; --success-green: #4caf50; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Header Section */
+        header { background: var(--main-purple); color: white; width: 100%; padding: 25px 0; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .container { width: 90%; max-width: 500px; margin-top: 20px; }
+        
+        /* Status Card */
+        .status-card { background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Lesson Cards */
+        .lesson-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 15px rgba(0,0,0,0.1); margin-bottom: 20px; border-right: 5px solid var(--main-purple); display: none; }
+        .lesson-content { padding: 20px; }
+        .lesson-price { font-weight: bold; color: var(--success-green); font-size: 1.2em; }
+        
+        /* Buttons */
+        .btn { border: none; padding: 15px 25px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; }
+        .btn-login { background: var(--accent-orange); color: white; }
+        .btn-pay { background: var(--success-green); color: white; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        #log-area { font-size: 12px; color: #666; margin-top: 10px; background: #eee; padding: 5px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
 
-    <h1>تطبيق Étude 📚</h1>
+<header>
+    <h1>📚 تطبيق Étude</h1>
+    <p>تعلم واربح باستخدام Pi</p>
+</header>
 
-    <div class="card">
-        <p id="user-msg">مرحباً بك! يرجى تسجيل الدخول أولاً</p>
-        <button class="btn" id="loginBtn">دخول عبر Pi</button>
+<div class="container">
+    <div class="status-card" id="login-section">
+        <h3 id="welcome-msg">مرحباً بك في مستقبل التعلم</h3>
+        <p>سجل دخولك لبدء استكشاف الدروس</p>
+        <button class="btn btn-login" id="loginBtn">دخول عبر Pi Network</button>
     </div>
 
-    <div class="card" id="lesson-card" style="display:none;">
-        <h3>🎓 درس: أساسيات عملات Pi</h3>
-        <p>السعر: 0.1 π</p>
-        <button class="btn btn-pay" onclick="transferPi()">شراء الدرس الآن</button>
-        <div id="status"></div>
+    <div class="lesson-card" id="lesson1">
+        <div class="lesson-content">
+            <h3>🎓 الدرس الأول: مدخل إلى Blockchain</h3>
+            <p>تعلم كيف تعمل تقنية البلوكشين في 10 دقائق.</p>
+            <p class="lesson-price">السعر: 0.1 π</p>
+            <button class="btn btn-pay" onclick="requestPayment(0.1, 'الدرس الأول')">شراء الدرس الآن</button>
+            <div id="log-area"></div>
+        </div>
     </div>
+</div>
 
-    <script>
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: true });
+<script>
+    const Pi = window.Pi;
+    // تهيئة التطبيق في وضع التجربة
+    Pi.init({ version: "2.0", sandbox: true });
 
-        // دالة تسجيل الدخول
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            try {
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-                document.getElementById('user-msg').innerText = "أهلاً بك يا " + auth.user.username;
-                document.getElementById('loginBtn').style.display = "none";
-                document.getElementById('lesson-card').style.display = "block";
-            } catch (e) {
-                alert("خطأ في الدخول: " + e.message);
-            }
-        });
+    const loginBtn = document.getElementById('loginBtn');
+    const loginSection = document.getElementById('login-section');
+    const lessonCard = document.getElementById('lesson1');
+    const welcomeMsg = document.getElementById('welcome-msg');
+    const logArea = document.getElementById('log-area');
 
-        // دالة الدفع (إرسال عملة Pi)
-        async function transferPi() {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerText = "جاري تحضير المحفظة...";
+    // وظيفة تسجيل الدخول
+    loginBtn.onclick = async () => {
+        loginBtn.disabled = true;
+        loginBtn.innerText = "جاري التحقق...";
+        
+        try {
+            const auth = await Pi.authenticate(['username', 'payments'], (p) => {
+                console.log("Payment in progress...", p);
+            });
             
-            try {
-                const payment = await Pi.createPayment({
-                    amount: 0.1,
-                    memo: "شراء درس تعليمي من Étude",
-                    metadata: { lessonId: "pi_101" },
-                }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        statusDiv.innerText = "ينتظر موافقة الشبكة (ID: " + paymentId + ")";
-                        // ملاحظة للمطور: هنا يتم إرسال المعرف لخادمك لاحقاً
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        statusDiv.innerText = "✅ اكتمل الدفع! رقم العملية: " + txid;
-                        alert("مبروك! تم فتح الدرس.");
-                    },
-                    onCancel: (paymentId) => { statusDiv.innerText = "❌ تم إلغاء العملية"; },
-                    onError: (error, payment) => { statusDiv.innerText = "⚠️ خطأ: " + error.message; },
-                });
-            } catch (e) {
-                alert("فشل العملية: " + e.message);
-            }
+            // نجاح الدخول
+            welcomeMsg.innerText = "أهلاً بك، " + auth.user.username;
+            welcomeMsg.style.color = "#4caf50";
+            loginBtn.style.display = "none";
+            loginSection.querySelector('p').innerText = "تم تسجيل دخولك بنجاح ✅";
+            
+            // إظهار الدروس
+            lessonCard.style.display = "block";
+            
+        } catch (err) {
+            alert("فشل تسجيل الدخول: " + err.message);
+            loginBtn.disabled = false;
+            loginBtn.innerText = "حاول مرة أخرى";
         }
-    </script>
+    };
+
+    // وظيفة طلب الدفع
+    async function requestPayment(amt, lessonName) {
+        logArea.style.display = "block";
+        logArea.innerText = "جاري فتح المحفظة...";
+        
+        try {
+            const payment = await Pi.createPayment({
+                amount: amt,
+                memo: "شراء " + lessonName,
+                metadata: { lessonId: "L1" },
+            }, {
+                onReadyForServerApproval: (paymentId) => {
+                    logArea.innerText = "✅ بانتظار تأكيد الشبكة... المعرف: " + paymentId;
+                    // ملاحظة: في Sandbox قد تنتهي العملية هنا وهذا طبيعي حالياً
+                },
+                onReadyForServerCompletion: (paymentId, txid) => {
+                    logArea.innerText = "🎊 اكتملت العملية بنجاح! رقم المعاملة: " + txid;
+                    alert("تم فتح الدرس! استمتع بالتعلم.");
+                },
+                onCancel: (paymentId) => {
+                    logArea.innerText = "❌ تم إلغاء العملية من قبل المستخدم.";
+                },
+                onError: (error, payment) => {
+                    console.error(error);
+                    if(error.message.includes("expired")) {
+                        logArea.innerText = "💡 تذكير: الربط سليم، ولكن الدفع الحقيقي يحتاج لخادم (Server).";
+                    } else {
+                        logArea.innerText = "⚠️ خطأ: " + error.message;
+                    }
+                },
+            });
+        } catch (e) {
+            alert("خطأ تقني: " + e.message);
+        }
+    }
+</script>
+
 </body>
 </html>
